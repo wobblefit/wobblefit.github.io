@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artist Grid Creator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    #canvas-container {
+      position: relative;
+      display: inline-block;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Artist Grid Creator</h1>
+  <input type="file" id="image-upload" accept="image/*" />
+  <br><br>
+  <label>
+    Grid Type: 
+    <select id="grid-type">
+      <option value="cm">By CM</option>
+      <option value="squares">By Squares</option>
+    </select>
+  </label>
+  <input type="number" id="grid-value" placeholder="Enter value" />
+  <button id="apply-grid">Apply Grid</button>
+  <br><br>
+  <div id="canvas-container">
+    <canvas id="image-canvas"></canvas>
+  </div>
+  <br>
+  <button id="download-grid">Download Image with Grid</button>
+  
+  <script src="app.js"></script>
+</body>
+</html>
