@@ -4,17 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Artist Grid Creator</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
+      margin: 20px;
     }
     #canvas-container {
       position: relative;
       display: inline-block;
+      margin-top: 20px;
     }
     canvas {
       border: 1px solid #ccc;
+    }
+    #crop-container {
+      display: none;
+      text-align: center;
+    }
+    #crop-image {
+      max-width: 100%;
+      max-height: 80vh;
     }
   </style>
 </head>
@@ -22,6 +33,23 @@
   <h1>Artist Grid Creator</h1>
   <input type="file" id="image-upload" accept="image/*" />
   <br><br>
+
+  <!-- Cropping Section -->
+  <div id="crop-container">
+    <h2>Crop Your Image</h2>
+    <div>
+      <img id="crop-image" alt="Image to crop" />
+    </div>
+    <button id="crop-apply">Apply Crop</button>
+    <button id="crop-cancel">Cancel</button>
+  </div>
+
+  <!-- Canvas Section -->
+  <div id="canvas-container">
+    <canvas id="image-canvas"></canvas>
+  </div>
+
+  <br>
   <label>
     Grid Type: 
     <select id="grid-type">
@@ -32,12 +60,115 @@
   <input type="number" id="grid-value" placeholder="Enter value" />
   <button id="apply-grid">Apply Grid</button>
   <br><br>
-  <div id="canvas-container">
-    <canvas id="image-canvas"></canvas>
-  </div>
-  <br>
   <button id="download-grid">Download Image with Grid</button>
-  
-  <script src="app.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <script>
+    const imageUpload = document.getElementById('image-upload');
+    const gridType = document.getElementById('grid-type');
+    const gridValue = document.getElementById('grid-value');
+    const applyGrid = document.getElementById('apply-grid');
+    const downloadGrid = document.getElementById('download-grid');
+    const canvas = document.getElementById('image-canvas');
+    const ctx = canvas.getContext('2d');
+    const cropContainer = document.getElementById('crop-container');
+    const cropImage = document.getElementById('crop-image');
+    let cropper, uploadedImage;
+
+    // Handle image upload
+    imageUpload.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          cropContainer.style.display = 'block'; // Show crop area
+          canvas.style.display = 'none'; // Hide canvas
+          cropImage.src = e.target.result;
+
+          // Initialize Cropper.js
+          cropper = new Cropper(cropImage, {
+            aspectRatio: NaN, // Free aspect ratio
+            viewMode: 1,
+            autoCropArea: 1,
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Apply cropping
+    document.getElementById('crop-apply').addEventListener('click', () => {
+      const croppedCanvas = cropper.getCroppedCanvas();
+
+      // Update the main canvas with cropped image
+      canvas.width = croppedCanvas.width;
+      canvas.height = croppedCanvas.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(croppedCanvas, 0, 0);
+
+      // Cleanup and reset UI
+      cropContainer.style.display = 'none';
+      canvas.style.display = 'block';
+      uploadedImage = croppedCanvas.toDataURL(); // Save cropped image data
+      cropper.destroy();
+    });
+
+    // Cancel cropping
+    document.getElementById('crop-cancel').addEventListener('click', () => {
+      cropContainer.style.display = 'none';
+      canvas.style.display = 'block';
+      cropper.destroy();
+    });
+
+    // Apply grid
+    applyGrid.addEventListener('click', () => {
+      if (!uploadedImage) return alert("Please crop or upload an image first.");
+      const value = parseFloat(gridValue.value);
+      if (isNaN(value) || value <= 0) return alert("Please enter a valid grid value.");
+
+      ctx.drawImage(new Image(), 0, 0, canvas.width, canvas.height); // Reset to cropped image
+      ctx.strokeStyle = '#000000';
+      const { width, height } = canvas;
+
+      if (gridType.value === 'cm') {
+        const dpi = 96; // assuming 96 DPI
+        const cmToPixels = value * (dpi / 2.54);
+        for (let x = cmToPixels; x < width; x += cmToPixels) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+          ctx.stroke();
+        }
+        for (let y = cmToPixels; y < height; y += cmToPixels) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+      } else if (gridType.value === 'squares') {
+        const squareSize = width / value;
+        for (let x = squareSize; x < width; x += squareSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+          ctx.stroke();
+        }
+        for (let y = squareSize; y < height; y += squareSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+      }
+    });
+
+    // Download the grid image
+    downloadGrid.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'image-with-grid.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  </script>
 </body>
 </html>
